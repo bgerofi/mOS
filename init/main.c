@@ -88,6 +88,7 @@
 #include <linux/io.h>
 #include <linux/cache.h>
 #include <linux/rodata_test.h>
+#include <linux/mos.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -965,6 +966,9 @@ static int __ref kernel_init(void *unused)
 	numa_default_policy();
 
 	rcu_end_inkernel_boot();
+
+	/* Create LWK default partition if required. */
+	lwkctl_def_partition();
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);

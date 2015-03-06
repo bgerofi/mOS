@@ -925,6 +925,7 @@ endif
 
 ifeq ($(KBUILD_EXTMOD),)
 core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/
+core-y		+= mOS/
 
 vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
@@ -1241,6 +1242,13 @@ ifeq ($(CONFIG_MODULE_SIG), y)
 PHONY += modules_sign
 modules_sign:
 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modsign
+endif
+
+ifeq ($(CONFIG_MOS_FOR_HPC), y)
+PHONY += _toolinst_
+modules_install: _toolinst_
+_toolinst_:
+	$(Q)$(MAKE) $(build)=mOS/tools $@
 endif
 
 else # CONFIG_MODULES
