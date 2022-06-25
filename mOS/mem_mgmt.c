@@ -2034,7 +2034,7 @@ void print_pgd(pgd_t *cr3, unsigned long addr)
 	struct page *page = NULL;
 #endif /* DEBUG_DEBUG */
 
-	print_cr3("", native_read_cr3_pa());
+	print_cr3("", native_read_cr3());
 	PML4E = (unsigned long *)cr3;
 #ifdef DEBUG_DEBUG
 	pgd = pgd_offset(current->mm, addr);

@@ -15,6 +15,11 @@
 #ifndef _LINUX_MOS_H
 #define _LINUX_MOS_H
 
+/* These should go somewhere else! */
+#define __ALIGN_KERNEL_MASK(x, mask)    (((x) + (mask)) & ~(mask))
+#define __ALIGN_KERNEL(x, a)            __ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
+#define ALIGN_DOWN(x, a)    __ALIGN_KERNEL((x) - ((a) - 1), (a))
+
 
 #include <linux/cpumask.h>
 #include <linux/sched.h>
