@@ -338,11 +338,10 @@ int swap_readpage(struct page *page)
 	VM_BUG_ON_PAGE(!PageSwapCache(page), page);
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
 	VM_BUG_ON_PAGE(PageUptodate(page), page);
-	if (frontswap_load(page) == 0) {
-		SetPageUptodate(page);
-		unlock_page(page);
+
+	if (frontswap_load_async(page) == 0)
 		goto out;
-	}
+
 
 	if (sis->flags & SWP_FILE) {
 		struct file *swap_file = sis->swap_file;
@@ -378,6 +377,19 @@ int swap_readpage(struct page *page)
 out:
 	return ret;
 }
+
+int swap_readpage_sync(struct page *page)
+{
+       VM_BUG_ON_PAGE(!PageSwapCache(page), page);
+       VM_BUG_ON_PAGE(!PageLocked(page), page);
+       VM_BUG_ON_PAGE(PageUptodate(page), page);
+
+       BUG_ON(frontswap_load(page));
+
+       return 0;
+}
+
+
 
 int swap_set_page_dirty(struct page *page)
 {

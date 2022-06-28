@@ -79,6 +79,10 @@
 #include <asm/pgtable.h>
 
 #include "internal.h"
+#include <linux/frontswap.h>
+#include <linux/delay.h>
+
+
 
 #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
 #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.

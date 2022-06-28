@@ -21,6 +21,8 @@
 #include <linux/swap_slots.h>
 
 #include <asm/pgtable.h>
+#include <linux/frontswap.h>
+
 
 /*
  * swapper_space is a fiction, retained to simplify the path through
@@ -426,6 +428,22 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
 	return retpage;
 }
 
+
+struct page *read_swap_cache_sync(swp_entry_t entry, gfp_t gfp_mask,
+                       struct vm_area_struct *vma, unsigned long addr)
+{
+       bool page_was_allocated;
+       struct page *retpage = __read_swap_cache_async(entry, gfp_mask,
+                       vma, addr, &page_was_allocated);
+
+       if (page_was_allocated)
+               swap_readpage_sync(retpage);
+
+       return retpage;
+}
+
+
+
 static unsigned long swapin_nr_pages(unsigned long offset)
 {
 	static unsigned long prev_offset;
@@ -492,12 +510,19 @@ static unsigned long swapin_nr_pages(unsigned long offset)
 struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 			struct vm_area_struct *vma, unsigned long addr)
 {
-	struct page *page;
+	struct page *page, *faultpage;
 	unsigned long entry_offset = swp_offset(entry);
 	unsigned long offset = entry_offset;
 	unsigned long start_offset, end_offset;
 	unsigned long mask;
-	struct blk_plug plug;
+
+	int cpu;
+
+	preempt_disable();
+	cpu = smp_processor_id();
+	faultpage = read_swap_cache_sync(entry, gfp_mask, vma, addr);
+	preempt_enable();
+
 
 	mask = swapin_nr_pages(offset) - 1;
 	if (!mask)
@@ -509,22 +534,25 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 	if (!start_offset)	/* First page is swap header. */
 		start_offset++;
 
-	blk_start_plug(&plug);
 	for (offset = start_offset; offset <= end_offset ; offset++) {
+
+		if (offset == entry_offset)
+			continue;
+
+
 		/* Ok, do the async read-ahead now */
 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
 						gfp_mask, vma, addr);
 		if (!page)
 			continue;
-		if (offset != entry_offset)
-			SetPageReadahead(page);
+		SetPageReadahead(page);
 		put_page(page);
 	}
-	blk_finish_plug(&plug);
 
 	lru_add_drain();	/* Push any new pages onto the LRU now */
 skip:
-	return read_swap_cache_async(entry, gfp_mask, vma, addr);
+	frontswap_poll_load(cpu);
+	 return faultpage;
 }
 
 int init_swap_address_space(unsigned int type, unsigned long nr_pages)
