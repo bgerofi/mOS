@@ -1500,6 +1500,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
 	unsigned long next, flags;
 	pgd_t *pgdp;
 	int nr = 0;
+
 #ifdef CONFIG_MOS_LWKMEM
 	int ret;
 
@@ -1576,8 +1577,12 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
 	int nr, ret;
 
 	start &= PAGE_MASK;
+#ifndef CONFIG_MOS_LWKMEM
 	nr = __get_user_pages_fast(start, nr_pages, write, pages);
 	ret = nr;
+#else
+	nr = 0;
+#endif
 
 	if (nr < nr_pages) {
 		/* Try to get the remaining pages with get_user_pages */
